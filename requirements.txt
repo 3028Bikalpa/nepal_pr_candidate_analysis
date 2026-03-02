@@ -1,0 +1,6 @@
+pandas>=2.0
+numpy>=1.24
+matplotlib>=3.7
+pdfplumber>=0.11
+tqdm>=4.66
+nbformat>=5.9
