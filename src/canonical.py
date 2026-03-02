@@ -68,6 +68,15 @@ CANONICAL_DISTRICTS = [
     "संखुवासभा", "खोटाङ", "भोजपुर", "सोलुखुम्बु", "ओखलढुंगा", "अघाखाँची", "मनाङ", "मुस्ताङ",
 ]
 
+CANONICAL_INCLUSIVE_GROUPS = [
+    "आदिवासी जनजाति",
+    "खस आर्य",
+    "मधेशी",
+    "थारू",
+    "दलित",
+    "मुसलमान",
+]
+
 _PARTY_ALIAS = {
     "नेपाल मजदुर िकसान पाट": "नेपाल मजदुर किसान पार्टी",
     "नेपाल लोकतािक पाट": "नेपाल लोकतान्त्रिक पार्टी",
@@ -295,4 +304,35 @@ def standardize_party_district(df: pd.DataFrame) -> pd.DataFrame:
 
     out["party"] = out["party"].fillna("UNKNOWN_PARTY")
     out["नागरिकता जारी जिल्ला"] = out["नागरिकता जारी जिल्ला"].fillna("UNKNOWN_DISTRICT")
+    return out
+
+
+def canonicalize_inclusive_group(raw: str) -> str | None:
+    s = _norm_text(raw)
+    if not s:
+        return None
+
+    s_key = _key(s)
+
+    # Common OCR variants from the PR PDF extraction.
+    if any(k in s for k in ("आदिवासी", "आदवासी", "जनजात")):
+        return "आदिवासी जनजाति"
+    if s in ("ष", "खस", "खस आय", "खस आर्य") or any(k in s for k in ("खस", "आर्य")):
+        return "खस आर्य"
+    if any(k in s for k in ("मधेश", "मधशे")):
+        return "मधेशी"
+    if s in ("थारु", "थारू", "था") or "थार" in s:
+        return "थारू"
+    if s in ("दलत", "दलित") or "दल" in s_key:
+        return "दलित"
+    if s in ("मुिलम", "मिु", "मुस्लिम", "मुसलमान") or any(k in s for k in ("मुस", "मुिल")):
+        return "मुसलमान"
+    return None
+
+
+def standardize_inclusive_group(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    out["group_raw"] = out["समावेशी समूह"].fillna("").astype(str).str.strip()
+    out["समावेशी समूह"] = out["group_raw"].map(canonicalize_inclusive_group)
+    out["समावेशी समूह"] = out["समावेशी समूह"].fillna("UNKNOWN_GROUP")
     return out
